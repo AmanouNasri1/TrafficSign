@@ -7,9 +7,9 @@ from torchvision import transforms, datasets
 from model import TrafficSignCNN
 
 # Paths
-train_dir = r"C:\Users\amanu\Desktop\Projects\Traffic Sign Recognition\data\Train\Final_Training\Images"
+train_dir = r"C:\Users\amanu\Desktop\Projects\TrafficSign\data\Train\Final_Training\Images"
 BATCH_SIZE = 64
-EPOCHS = 20
+EPOCHS = 25
 LR = 0.001
 NUM_CLASSES = 43
 MODEL_PATH = "traffic_sign_model.pth"
