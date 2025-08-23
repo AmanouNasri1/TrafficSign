@@ -2,17 +2,17 @@ import cv2
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
-from model import TrafficSignCNN  # Your CNN model code
-from utils import get_class_name  # Your class name mapping
+from model import TrafficSignCNN 
+from utils import get_class_name
 
 # Settings
 MODEL_PATH = "traffic_sign_model.pth"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-CAMERA_ID = 2
+CAMERA_ID = 0
 
 # Load model
 model = TrafficSignCNN(num_classes=43).to(DEVICE)
-model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model.load_state_dict(torch.load("traffic_sign_model.pth", map_location=DEVICE, weights_only=True))
 model.eval()
 
 # Define transforms (same as during training)
