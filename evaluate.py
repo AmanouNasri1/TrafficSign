@@ -1,74 +1,78 @@
+import os
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
-from dataset import TrafficSignDataset  # Your dataset class (needs to accept CSV + dir)
-from model import TrafficSignCNN        # Your CNN model definition
-from utils import get_class_name         # For class name mapping
-from sklearn.metrics import confusion_matrix, accuracy_score
+from torchvision import transforms
+import pandas as pd
+import numpy as np
+from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def evaluate_model(model_path, test_data_dir, batch_size=64, device='cpu'):
-    """
-    Loads the trained model and evaluates it on the test dataset.
-    
-    Parameters:
-    - model_path: path to saved PyTorch model (.pth)
-    - test_data_dir: directory containing test images AND GT-final_test.csv
-    - batch_size: how many images to process at once
-    - device: 'cpu' or 'cuda'
-    """
+from model import TrafficSignCNN
+from dataset import TrafficSignDataset
 
-    # 1. Load the trained model and move to device (CPU/GPU)
-    model = TrafficSignCNN(num_classes=43)
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.to(device)
-    model.eval()  # Set model to evaluation mode
+# ===== Paths =====
+TEST_CSV = r"C:\Users\amanu\Desktop\Projects\TrafficSign\data\Test\GT-final_test.csv"
+TEST_IMAGES_DIR = r"C:\Users\amanu\Desktop\Projects\TrafficSign\data\Test\Final_Test\Images"
+MODEL_PATH = "traffic_sign_model.pth"
+NUM_CLASSES = 43
 
-    # 2. Prepare test dataset and dataloader
-    csv_file = f"{test_data_dir}/GT-final_test.csv"  # CSV with labels
-    test_dataset = TrafficSignDataset(root_dir=test_data_dir, csv_file=csv_file)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+# ===== Device =====
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    all_preds = []
-    all_labels = []
+# ===== Transforms =====
+test_transform = transforms.Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((32, 32)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                         std=[0.229, 0.224, 0.225])
+])
 
-    # 3. Disable gradient calculation for inference (saves memory and speed)
-    with torch.no_grad():
-        for inputs, labels in test_loader:
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+# ===== Dataset & DataLoader =====
+test_dataset = TrafficSignDataset(root_dir=TEST_IMAGES_DIR, csv_file=TEST_CSV, transform=test_transform)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
-            # Forward pass: get predictions
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)  # Get class with highest score
+# ===== Model =====
+model = TrafficSignCNN(num_classes=NUM_CLASSES).to(device)
+model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+model.eval()
 
-            # Collect all predictions and true labels for metrics
-            all_preds.extend(preds.cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
+# ===== Evaluation =====
+criterion = nn.CrossEntropyLoss()
+total_loss, correct, total = 0, 0, 0
+all_labels, all_preds = [], []
 
-    # 4. Calculate overall accuracy
-    acc = accuracy_score(all_labels, all_preds)
-    print(f"Test Accuracy: {acc * 100:.2f}%")
+with torch.no_grad():
+    for images, labels in test_loader:
+        images, labels = images.to(device), labels.to(device)
 
-    # 5. Compute confusion matrix to understand errors class-wise
-    cm = confusion_matrix(all_labels, all_preds)
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        total_loss += loss.item() * images.size(0)
 
-    # 6. Plot confusion matrix with seaborn for visualization
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-    plt.title("Confusion Matrix")
-    plt.xlabel("Predicted Label")
-    plt.ylabel("True Label")
-    plt.show()
+        _, preds = torch.max(outputs, 1)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
 
-if __name__ == "__main__":
-    import argparse
+        all_labels.extend(labels.cpu().numpy())
+        all_preds.extend(preds.cpu().numpy())
 
-    parser = argparse.ArgumentParser(description="Evaluate Traffic Sign Model")
-    parser.add_argument('--model', type=str, default='traffic_sign_model.pth', help='Path to saved model')
-    parser.add_argument('--test_dir', type=str, default='data/Test', help='Directory with test images and GT CSV')
-    parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--device', type=str, default='cpu', help='Device: cpu or cuda')
+# ===== Results =====
+avg_loss = total_loss / total
+accuracy = 100 * correct / total
 
-    args = parser.parse_args()
-    evaluate_model(args.model, args.test_dir, args.batch_size, args.device)
+print(f"Test Loss: {avg_loss:.4f}")
+print(f"Test Accuracy: {accuracy:.2f}%")
+print("\nClassification Report:")
+print(classification_report(all_labels, all_preds, digits=4))
+
+# ===== Confusion Matrix =====
+cm = confusion_matrix(all_labels, all_preds)
+plt.figure(figsize=(12, 10))
+sns.heatmap(cm, annot=False, cmap="Blues", fmt="d")
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.show()
