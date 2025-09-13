@@ -1,0 +1,8 @@
+path: C:/Users/amanu/Desktop/Projects/TrafficSign/detection/data/Images
+train: Train
+val: Val
+
+nc: 50
+names: ['pl80', 'p6', 'ph', 'w', 'pa', 'p27', 'i5', 'p1', 'il70', 'p5', 'pm', 'p19', 'ip', 'p11', 'p13', 'p26', 'i2', 'pn', 'p10', 'p23', 'pbp', 'p3', 'p12', 
+        'pne', 'i4', 'pb', 'pg', 'pr','pl5','pl10','pl15','pl20','pl25','pl30','pl35','pl40','pl50','pl60','pl65','pl70','pl90','pl100','pl110',
+        'pl120','il50','il60','il80','il90','il100','il110']
