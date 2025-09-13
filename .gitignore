@@ -15,5 +15,6 @@ runs/
 *.pt
 
 # Datasets
-detection/data/
+detection/data/images
+detection/data/labels
 classification/data/
