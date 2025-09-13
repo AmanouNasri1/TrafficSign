@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+.venv/
+
+# YOLO runs and weights
+runs/
+*.pt
+
+# Datasets
+detection/data/
+classification/data/
