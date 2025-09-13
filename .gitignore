@@ -12,9 +12,15 @@ __pycache__/
 
 # YOLO runs and weights
 runs/
+weights/
 *.pt
 
 # Datasets
 detection/data/images
 detection/data/labels
 classification/data/
+
+# Images or cache
+*.jpg
+*.png
+*.cache
